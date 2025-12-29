@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>In Focus 1 (2nd Ed.) Audio</title>
+  <meta name="color-scheme" content="light dark" />
+  <style>
+    :root{
+      --bg:#f6f7fb;--fg:#0f172a;--muted:#6b7280;--line:#e5e7eb;--card:#fff;
+      --accent:#2563eb;--accent-2:#1e40af;--playing:#edf2ff;
+      --shadow:0 8px 22px rgba(15,23,42,.06);
+      --header-shadow:0 6px 18px rgba(15,23,42,.06);
+      --playing-shadow:0 0 22px rgba(37,99,235,.18);
+      --eq-bar:rgba(37,99,235,.7);
+      --hero-grad:linear-gradient(180deg, rgba(37,99,235,.08), rgba(37,99,235,0) 55%);
+    }
+    [data-theme="dark"]{
+      --bg:#0b1220;--fg:#e5e7eb;--muted:#9aa3b2;--line:#243047;--card:#0f172a;
+      --accent:#60a5fa;--accent-2:#3b82f6;--playing:#132e69;
+      --shadow:0 10px 26px rgba(0,0,0,.35);
+      --header-shadow:0 8px 20px rgba(0,0,0,.4);
+      --playing-shadow:0 0 20px rgba(96,165,250,.28);
+      --eq-bar:rgba(96,165,250,.85);
+      --hero-grad:linear-gradient(180deg, rgba(96,165,250,.12), rgba(96,165,250,0) 55%);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:ui-sans-serif,"Noto Sans TC","Microsoft JhengHei",sans-serif;
+      background:var(--bg); color:var(--fg);
+      padding-bottom:110px;
+      scroll-behavior:smooth;
+    }
+    header{
+      position:sticky; top:0; z-index:40;
+      backdrop-filter:blur(10px);
+      background:color-mix(in srgb, var(--bg) 86%, transparent);
+      border-bottom:1px solid var(--line);
+      box-shadow:var(--header-shadow);
+    }
+    .wrap{max-width:1040px;margin:0 auto;padding:14px 20px}
+    .brandbar{display:flex;align-items:center;justify-content:space-between;gap:14px}
+    .brand{font-weight:800;letter-spacing:.2px}
+    .brand .en{font-size:15px;color:var(--muted)}
+    .btn{
+      height:36px;padding:0 12px;border-radius:10px;border:1px solid var(--line);
+      background:var(--card);color:var(--fg);cursor:pointer
+    }
+    .btn:hover{background:color-mix(in srgb,var(--accent) 10%,transparent)}
+    .btn.primary{background:var(--accent);color:#fff;border:none}
+    .btn.primary:hover{background:var(--accent-2)}
+
+    .hero{background:var(--hero-grad);border-bottom:1px solid var(--line);}
+    .hero .hwrap{max-width:1040px;margin:0 auto;padding:28px 20px 18px;text-align:center}
+    .hero .title{font-weight:900;letter-spacing:.2px;margin:0 0 6px;font-size:clamp(22px,4vw,36px)}
+    .hero .subtitle{margin:0;color:var(--muted);font-size:14px}
+
+    .controls{
+      display:flex;flex-wrap:wrap;gap:12px;align-items:center;
+      margin:14px auto 0;max-width:1040px;padding:0 20px
+    }
+    .group{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    input[type="search"],select{
+      height:36px;padding:0 12px;border-radius:10px;border:1px solid var(--line);
+      background:var(--card);color:var(--fg)
+    }
+    .searchbox{margin-left:auto;display:flex;gap:10px;flex:1;flex-wrap:wrap}
+    #search{flex:1 1 320px;min-width:200px}
+
+    main .wrap{padding:18px 20px}
+    .grid{display:grid;grid-template-columns:1fr;gap:16px}
+    @media(min-width:720px){.grid{grid-template-columns:1fr 1fr}}
+    @media(min-width:1040px){.grid{grid-template-columns:1fr 1fr 1fr}}
+
+    .card{
+      background:var(--card);border:1px solid var(--line);border-radius:16px;
+      padding:14px;box-shadow:var(--shadow);
+      display:flex;flex-direction:column;gap:8px;
+      transition:background .25s,border .25s,box-shadow .25s,transform .25s;
+    }
+    .card.playing{
+      border-color:var(--accent);background:var(--playing);
+      transform:translateY(-2px);
+      box-shadow:var(--playing-shadow);
+    }
+    .c-title{
+      font-weight:700;font-size:15px;display:flex;align-items:center;gap:10px;
+      overflow:hidden;text-overflow:ellipsis;white-space:nowrap
+    }
+    .eq{display:inline-flex;gap:2px;width:16px;height:14px;opacity:0;transition:opacity .25s ease;align-items:flex-end}
+    .eq span{display:block;width:2px;background:var(--eq-bar);border-radius:1px;animation:wave 1.2s ease-in-out infinite;transform-origin:bottom}
+    .eq span:nth-child(1){animation-delay:-.28s}
+    .eq span:nth-child(2){animation-delay:-.14s}
+    .eq span:nth-child(3){animation-delay:0s}
+    @keyframes wave{0%,100%{height:28%}50%{height:100%}}
+    .card.playing .eq{opacity:1}
+    .c-meta{color:var(--muted);font-size:12px}
+    audio{width:100%}
+
+    .footer{
+      max-width:1040px;margin:36px auto 14px;color:var(--muted);
+      font-size:12px;text-align:center;padding:0 20px
+    }
+    #loading{color:#b91c1c;white-space:pre-wrap;padding:16px 0}
+
+    .mini{
+      position:fixed;left:0;right:0;bottom:0;background:var(--card);
+      border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(0,0,0,.08);z-index:45
+    }
+    .mini-wrap{
+      max-width:1040px;margin:0 auto;display:flex;align-items:center;gap:10px;
+      flex-wrap:wrap;padding:10px 16px
+    }
+    .mini-title{flex:1;min-width:220px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .mini-range{flex:2;height:6px;border-radius:999px;background:#cbd5e1}
+    .mini-btn{height:32px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--fg);cursor:pointer}
+    .mini-btn.primary{background:var(--accent);border:none;color:#fff}
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="wrap brandbar">
+      <div class="brand">
+        <div style="font-size:16px;">🎧 英文書籍學習資源</div>
+        <div class="en">CEFR level: A1+</div>
+      </div>
+      <button id="theme" class="btn" title="切換主題">🌓 主題</button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hwrap">
+      <h1 class="title">In Focus 1 (2nd Ed.)</h1>
+      <p class="subtitle">若您目前無法順利播放音檔，建議下載後使用裝置內建播放器開啟喔，非常感謝！</p>
+    </div>
+  </section>
+
+  <div class="controls">
+    <div class="group">
+      <button id="playAll" class="btn primary">▶ 全部播放</button>
+      <label><input type="checkbox" id="autonext" checked> 自動下一首</label>
+      <label><input type="checkbox" id="loopOne"> 單曲循環</label>
+      <label>速度
+        <select id="rate">
+          <option>0.75</option>
+          <option selected>1</option>
+          <option>1.25</option>
+          <option>1.5</option>
+          <option>2</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="searchbox">
+      <select id="sortSel" title="排序">
+        <option value="num-asc" selected>編號（小→大）</option>
+        <option value="num-desc">編號（大→小）</option>
+        <option value="title-asc">標題 A→Z</option>
+        <option value="title-desc">標題 Z→A</option>
+      </select>
+      <input type="search" id="search" placeholder="搜尋檔名或標題（支援模糊）">
+    </div>
+  </div>
+
+  <main>
+    <div class="wrap">
+      <div id="loading">載入清單中...</div>
+      <div id="grid" class="grid" hidden></div>
+      <div class="footer">（本頁面僅作課室用途 | ✉m1341012@gm.ncue.edu.tw）</div>
+    </div>
+  </main>
+
+  <div class="mini">
+    <div class="mini-wrap">
+      <div id="miniTitle" class="mini-title">尚未播放</div>
+      <input id="miniRange" class="mini-range" type="range" min="0" max="100" value="0">
+      <button id="miniPrev" class="mini-btn">⏮</button>
+      <button id="miniPlay" class="mini-btn primary">▶</button>
+      <button id="miniNext" class="mini-btn">⏭</button>
+    </div>
+  </div>
+
+<script>
+  const TRACKS = [
+    {"file":"audio/001_The_Power_of_a_Smile.mp3","title":"001. The Power of a Smile"},
+    {"file":"audio/002_Mothers_Day_Card.mp3","title":"002. Mother's Day Card"},
+    {"file":"audio/003_Homestay_Experience.mp3","title":"003. Homestay Experience"},
+    {"file":"audio/004_Too_Much_Screen_time_Is_Bad_for_Your_Eyes.mp3","title":"004. Too Much Screen time Is Bad for Your Eyes"},
+    {"file":"audio/005_Saying_Sorry_to_a_Friend.mp3","title":"005. Saying Sorry to a Friend"},
+    {"file":"audio/006_Fishing_With_Dolphins.mp3","title":"006. Fishing With Dolphins"},
+    {"file":"audio/007_Teens_Emotional_Health.mp3","title":"007. Teen's Emotional Health"},
+    {"file":"audio/008_Clean_Our_Neighborhood.mp3","title":"008. Clean Our Neighborhood"},
+    {"file":"audio/009_Homesick_Blues.mp3","title":"009. Homesick Blues"},
+    {"file":"audio/010_How_to_Make_a_Jack_O_Lantern.mp3","title":"010. How to Make a Jack-O'-Lantern"},
+    {"file":"audio/011_Finding_a_Roommate.mp3","title":"011. Finding a Roommate"},
+    {"file":"audio/012_Dont_Eat_Too_Fast.mp3","title":"012. Don't Eat Too Fast"},
+    {"file":"audio/013_Homer_the_Blind_Wonder_Cat.mp3","title":"013. Homer the Blind Wonder Cat"},
+    {"file":"audio/014_Having_a_Crush_on_Someone.mp3","title":"014. Having a Crush on Someone"},
+    {"file":"audio/015_Music_Radio.mp3","title":"015. Music Radio"},
+    {"file":"audio/016_Songkran.mp3","title":"016. Songkran"},
+    {"file":"audio/017_An_Awkward_Moment.mp3","title":"017. An Awkward Moment"},
+    {"file":"audio/018_Bus_Schedule.mp3","title":"018. Bus Schedule"},
+    {"file":"audio/019_Comfortable_in_Your_Own_Skin.mp3","title":"019. Comfortable in Your Own Skin"},
+    {"file":"audio/020_The_Dating_Book.mp3","title":"020. The Dating Book"},
+    {"file":"audio/021_Online_Shopping_Customer_Service.mp3","title":"021. Online Shopping Customer Service"},
+    {"file":"audio/022_Right_Hand_Left_Hand.mp3","title":"022. Right Hand Left Hand"},
+    {"file":"audio/023_Summer_Night.mp3","title":"023. Summer Night"},
+    {"file":"audio/024_First_Aid_for_Choking.mp3","title":"024. First Aid for Choking"},
+    {"file":"audio/025_Strange_Animals_The_Hammerhead_Sharks.mp3","title":"025. Strange Animals The Hammerhead Sharks"},
+    {"file":"audio/026_Jims_Calendar.mp3","title":"026. Jim's Calendar"},
+    {"file":"audio/027_The_Cold_Shoulder.mp3","title":"027. The Cold Shoulder"},
+    {"file":"audio/028_Interview_With_a_Pop_Star.mp3","title":"028. Interview With a Pop Star"},
+    {"file":"audio/029_School_Bullying.mp3","title":"029. School Bullying"},
+    {"file":"audio/030_Berkley_Science_Museum.mp3","title":"030. Berkley Science Museum"},
+    {"file":"audio/031_Can_Dogs_See_in_Color.mp3","title":"031. Can Dogs See in Color"},
+    {"file":"audio/032_A_Job_Opening.mp3","title":"032. A Job Opening"},
+    {"file":"audio/033_Enjoy_Nature.mp3","title":"033. Enjoy Nature"},
+    {"file":"audio/034_Flea_Market_Poster.mp3","title":"034. Flea Market Poster"},
+    {"file":"audio/035_Basketball.mp3","title":"035. Basketball"},
+    {"file":"audio/036_King_Henry_VIII.mp3","title":"036. King Henry VIII"},
+    {"file":"audio/037_Working_Holiday_Visa.mp3","title":"037. Working Holiday Visa"},
+    {"file":"audio/038_Using_Your_Money_Wisely.mp3","title":"038. Using Your Money Wisely"},
+    {"file":"audio/039_Time_for_a_Walk.mp3","title":"039. Time for a Walk"},
+    {"file":"audio/040_Are_Video_Games_Really_Dangerous.mp3","title":"040. Are Video Games Really Dangerous"},
+    {"file":"audio/041_Sundae_Recipe.mp3","title":"041. Sundae Recipe"},
+    {"file":"audio/042_Traveling_Abroad_With_the_Family.mp3","title":"042. Traveling Abroad With the Family"},
+    {"file":"audio/043_Why_Should_We_Read.mp3","title":"043. Why Should We Read"},
+    {"file":"audio/044_Why_Do_Whales_Explode.mp3","title":"044. Why Do Whales Explode"},
+    {"file":"audio/045_Movie_Review.mp3","title":"045. Movie Review"},
+    {"file":"audio/046_Tears.mp3","title":"046. Tears"},
+    {"file":"audio/047_An_Interesting_Way_to_Give_a_Gift.mp3","title":"047. An Interesting Way to Give a Gift"},
+    {"file":"audio/048_Who_Works_the_Most_Hours.mp3","title":"048. Who Works the Most Hours"},
+    {"file":"audio/049_Lake_Valley.mp3","title":"049. Lake Valley"},
+    {"file":"audio/050_Valentines_Day_Set_Menu.mp3","title":"050. Valentine's Day Set Menu"}
+  ];
+
+  const grid = document.getElementById('grid');
+  const loading = document.getElementById('loading');
+  const rateSel = document.getElementById('rate');
+  const autoNext = document.getElementById('autonext');
+  const loopOne = document.getElementById('loopOne');
+  const search = document.getElementById('search');
+  const playAll = document.getElementById('playAll');
+  const themeBtn = document.getElementById('theme');
+  const sortSel = document.getElementById('sortSel');
+
+  const miniTitle = document.getElementById('miniTitle');
+  const miniRange = document.getElementById('miniRange');
+  const miniPlay = document.getElementById('miniPlay');
+  const miniPrev = document.getElementById('miniPrev');
+  const miniNext = document.getElementById('miniNext');
+
+  const players = [];
+  let all = TRACKS.slice();
+  let view = [];
+  let currentIndex = -1;
+  let raf = null;
+
+  (function(){
+    const saved = localStorage.getItem('theme');
+    const prefers = matchMedia('(prefers-color-scheme: dark)').matches;
+    const start = saved || (prefers ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', start);
+  })();
+  themeBtn.onclick = () => {
+    const cur = document.documentElement.getAttribute('data-theme');
+    const next = (cur === 'dark') ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+  };
+
+  const fmt = s => (!isFinite(s) || s <= 0) ? '0:00' : `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+  const norm = s => (s || '').toLowerCase().normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .replace(/[_\-.]+/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+
+  const isSubseq = (a,b) => { let i=0; for(const c of b) if(c===a[i]) i++; return i===a.length; };
+  const matches = (it,q) => !q || norm(q).split(' ').filter(Boolean).every(t=>{
+    const tx = norm(it.title) + ' ' + norm(it.file);
+    return tx.includes(t) || isSubseq(t,tx);
+  });
+
+  const highlight = (tx,q) => {
+    if(!q) return tx;
+    const tokens = norm(q).split(' ').filter(Boolean);
+    let out = tx;
+    for(const t of tokens){
+      const esc = t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+      out = out.replace(new RegExp(esc,'gi'), m => `<span style="background:rgba(255,235,59,.5)">${m}</span>`);
+    }
+    return out;
+  };
+
+  const leadNum = s => {
+    const m = String(s||'').match(/^\s*(\d{1,6})[\s_.-]?/);
+    return m ? parseInt(m[1],10) : null;
+  };
+  const cmpNat = (a,b) => String(a).localeCompare(String(b),'zh-Hant',{numeric:true,sensitivity:'base'});
+  function sortCompare(mode,A,B){
+    const aT=A.title||A.file||'', bT=B.title||B.file||'';
+    const aN=leadNum(aT) ?? leadNum(A.file), bN=leadNum(bT) ?? leadNum(B.file);
+    if(mode.startsWith('num')){
+      if(aN!=null && bN!=null) return mode==='num-asc' ? aN-bN : bN-aN;
+      if(aN!=null && bN==null) return -1;
+      if(aN==null && bN!=null) return 1;
+      return mode==='num-asc' ? cmpNat(aT,bT) : -cmpNat(aT,bT);
+    }
+    if(mode==='title-asc') return cmpNat(aT,bT);
+    if(mode==='title-desc') return -cmpNat(aT,bT);
+    return 0;
+  }
+
+  function enforceSinglePlayback(target){
+    document.querySelectorAll('audio').forEach(a=>{
+      if(a!==target && !a.paused){
+        a.pause();
+        a.currentTime = 0;
+      }
+    });
+  }
+
+  function hookMiniTo(a, title){
+    miniTitle.textContent = title;
+    miniPlay.textContent = a.paused ? '▶' : '⏸';
+
+    cancelAnimationFrame(raf);
+    (function tick(){
+      miniRange.value = a.duration ? (a.currentTime/a.duration)*100 : 0;
+      raf = requestAnimationFrame(tick);
+    })();
+
+    miniPlay.onclick = ()=> a.paused ? a.play() : a.pause();
+    miniPrev.onclick = ()=> { if(currentIndex>0) players[currentIndex-1].play(); };
+    miniNext.onclick = ()=> { if(currentIndex<players.length-1) players[currentIndex+1].play(); };
+    miniRange.oninput = ()=> { if(a.duration) a.currentTime = (miniRange.value/100)*a.duration; };
+  }
+
+  function render(list,q=''){
+    grid.innerHTML='';
+    players.length = 0;
+    currentIndex = -1;
+
+    if(!list.length){
+      grid.innerHTML = '<p style="color:#8b8b8b">找不到符合的音檔。</p>';
+      return;
+    }
+
+    list.forEach((t)=>{
+      const card = document.createElement('div');
+      card.className = 'card';
+
+      const title = document.createElement('div');
+      title.className = 'c-title';
+      title.innerHTML = highlight(t.title || t.file, q);
+
+      const eq = document.createElement('div');
+      eq.className = 'eq';
+      eq.innerHTML = '<span></span><span></span><span></span>';
+      title.append(eq);
+
+      const meta = document.createElement('div');
+      meta.className = 'c-meta';
+      meta.textContent = t.file;
+
+      const audio = document.createElement('audio');
+      audio.src = t.file;
+      audio.controls = true;
+      audio.preload = 'metadata';
+      audio.playbackRate = parseFloat(rateSel.value || '1');
+
+      audio.addEventListener('loadedmetadata',()=>{
+        meta.textContent = `${fmt(audio.duration)} · ${t.file}`;
+      });
+
+      audio.addEventListener('play',()=>{
+        enforceSinglePlayback(audio);
+        document.querySelectorAll('.card.playing').forEach(x=>x.classList.remove('playing'));
+        card.classList.add('playing');
+
+        currentIndex = players.indexOf(audio);
+        hookMiniTo(audio, (t.title || t.file));
+
+        setTimeout(()=>card.scrollIntoView({behavior:'smooth', block:'center'}), 160);
+      });
+
+      audio.addEventListener('pause',()=>{ miniPlay.textContent='▶'; });
+      audio.addEventListener('playing',()=>{ miniPlay.textContent='⏸'; });
+
+      audio.addEventListener('ended',()=>{
+        card.classList.remove('playing');
+        if(loopOne.checked){
+          audio.currentTime = 0;
+          audio.play();
+          return;
+        }
+        if(autoNext.checked){
+          const n = players[players.indexOf(audio)+1];
+          if(n) n.play();
+        }
+      });
+
+      const links = document.createElement('div');
+      links.innerHTML = `<a href="${t.file}">開啟</a> · <a href="${t.file}" download>下載</a>`;
+
+      card.append(title, audio, meta, links);
+      grid.append(card);
+      players.push(audio);
+    });
+  }
+
+  function rebuild(){
+    const q = search.value.trim();
+    const filtered = all.filter(it=>matches(it,q));
+    filtered.sort((A,B)=>sortCompare(sortSel.value, A, B));
+    view = filtered;
+    render(view, q);
+  }
+
+  search.addEventListener('input', rebuild);
+  sortSel.addEventListener('change', rebuild);
+  rateSel.addEventListener('change', ()=>{
+    const r = parseFloat(rateSel.value || '1');
+    players.forEach(p=>p.playbackRate = r);
+  });
+
+  playAll.addEventListener('click', ()=>{
+    if(players.length === 0) return;
+    players[0].play();
+  });
+
+  loading.hidden = true;
+  grid.hidden = false;
+  rebuild();
+</script>
+</body>
+</html>
